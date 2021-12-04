@@ -12,6 +12,7 @@ def parse_args():
         description='MMDet test (and eval) a model')
     parser.add_argument('--gt_path', help='path of mat file of ground truth')
     parser.add_argument('--ann_path', help='path of generated xml files')
+    parser.add_argument('--unmasked_mode', help='unmasked_mode', type=int, default=0)
 
     args = parser.parse_args()
     return args
@@ -87,6 +88,8 @@ def main():
         pbar = tqdm.tqdm(range(event_num))
         for i in pbar:
             pbar.set_description('Processing {}'.format(settings[setting_id]))
+            if args.unmasked_mode == 1 and event_list[i][0][0] == "30--Surgeons":
+                continue
             img_list = file_list[i][0]
             sub_gt_list = gt_list[i][0]
             gt_bbx_list = facebox_list[i][0]
