@@ -131,6 +131,7 @@ dmypy.json
 # custom
 workdir/
 tests/
+MFD/webcam_video_capture/videos
 
 data/
 eval_dirs/
