@@ -32,6 +32,27 @@ data = dict(
             dict(typename='Collect', keys=['img', 'gt_bboxes',
                                            'gt_labels', 'gt_bboxes_ignore']),
         ]),
+    val=dict(
+            typename=dataset_type,
+            ann_file=data_root + 'WIDERFace/WIDER_val/val_WIDER.txt',
+            img_prefix=data_root + 'WIDERFace/WIDER_val/',
+            min_size=1,
+            offset=0,
+            pipeline=[
+                dict(typename='LoadImageFromFile'),
+                dict(
+                    typename='MultiScaleFlipAug',
+                    img_scale=(1100, 1650),
+                    flip=False,
+                    transforms=[
+                        dict(typename='Resize', keep_ratio=True),
+                        dict(typename='RandomFlip', flip_ratio=0.0),
+                        dict(typename='Normalize', **img_norm_cfg),
+                        dict(typename='Pad', size_divisor=32, pad_val=0),
+                        dict(typename='ImageToTensor', keys=['img']),
+                        dict(typename='Collect', keys=['img'])
+                    ])
+            ]),
 )
 
 # 2. model
@@ -128,6 +149,25 @@ train_engine = dict(
             pos_weight=-1,
             debug=False)),
     optimizer=dict(typename='SGD', lr=3.75e-3, momentum=0.9, weight_decay=5e-4)) # 3 GPUS
+
+val_engine = dict(
+    typename='ValEngine',
+    model=model,
+    meshgrid=meshgrid,
+    converter=dict(
+        typename='IoUBBoxAnchorConverter',
+        num_classes=num_classes,
+        bbox_coder=bbox_coder,
+        nms_pre=-1,
+        use_sigmoid=use_sigmoid),
+    num_classes=num_classes,
+    test_cfg=dict(
+        min_bbox_size=0,
+        score_thr=0.01,
+        nms=dict(typename='lb_nms', iou_thr=0.45),
+        max_per_img=-1),
+    use_sigmoid=use_sigmoid,
+    eval_metric=None)
 
 hooks = [
     dict(typename='OptimizerHook'),
