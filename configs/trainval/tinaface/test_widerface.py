@@ -28,7 +28,7 @@ def write_txt(save_folder, img_name, dets):
     if not osp.isdir(dirname):
         os.makedirs(dirname)
     with open(save_name, "w") as fd:
-        bboxs = dets[0]
+        bboxs = np.vstack(dets)
         file_name = osp.basename(save_name)[:-4] + "\n"
         bboxs_num = str(len(bboxs)) + "\n"
         fd.write(file_name)
