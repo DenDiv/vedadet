@@ -388,7 +388,7 @@ class CustomDataset(Dataset):
         eval_results = {}
         if metric == 'mAP':
             assert isinstance(iou_thr, float)
-            mean_ap, _ = eval_map(
+            mean_ap, eval_res = eval_map(
                 results,
                 annotations,
                 scale_ranges=scale_ranges,
@@ -396,6 +396,7 @@ class CustomDataset(Dataset):
                 dataset=self.CLASSES,
                 logger=logger)
             eval_results['mAP'] = mean_ap
+            eval_results['eval_res'] = eval_res
         elif metric == 'recall':
             # results : len:pics, results[0][0] shape (n,5)
             gt_bboxes = [ann['bboxes'] for ann in annotations]
