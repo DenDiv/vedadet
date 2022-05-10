@@ -1,29 +1,63 @@
-## Introduction
-vedadet is a single stage object detector toolbox based on PyTorch.
+# MFD
 
-## Features
+Project for masked/non masked face detection research.
 
-- **Modular Design**
+## Project and data preparation.
 
-  We re-design MMDetection based on our taste and needs. Specifically, we decompose detector into four parts: data pipeline, model, postprocessing and criterion which make it easy to convert PyTorch model into TensorRT engine and deploy it on NVIDIA devices such as Tesla V100, Jetson Nano and Jetson AGX Xavier, etc.
+a. Clone repository.
 
-- **Support of several popular single stage detector**
+```shell
+git clone --recurse-submodules https://github.com/DenDiv/vedadet.git
+```
 
-  The toolbox supports several popular single stage detector out of the box, *e.g.* RetinaNet, FCOS, etc.
- 
-- **Friendly to TensorRT**
-  
-  Detectors can be easily converted to TensorRT engine.
-  
-- **Easy to deploy**
-  
-  It's simple to deploy the model accelerate by TensorRT on NVIDIA devices through [Python front-end](https://github.com/Media-Smart/flexinfer) or [C++ front-end](https://github.com/Media-Smart/cheetahinfer).
+b. Download [eval_tools](http://shuoyang1213.me/WIDERFACE/support/eval_script/eval_tools.zip) and unzip it to the root of repository. 
 
-## License
+c. Download [WIDER](http://shuoyang1213.me/WIDERFACE/) train/val datasets. Also download [MAFA](https://www.kaggle.com/rahulmangalampalli/mafa-data). Extract both datasets as in the image below:
+```plain
+vedadet
+├── vedadet
+├── vedacore
+├── tools
+├── configs
+├── data
+│   ├── WIDERFace
+│   │   ├── WIDER_train
+│   │   │   ├── 0--Parade
+│   │   │   ├── ......
+│   │   │   ├── 61--Street_Battle
+│   │   ├── WIDER_val
+│   │   │   ├── 0--Parade
+│   │   │   ├── ......
+│   │   │   ├── 61--Street_Battle
+│   ├── MAFA
+│   │   ├── MAFA_train
+│   │   │   ├── images
+│   │   ├── MAFA_test
+│   │   │   ├── images
+├── ......
+├── eval_tools
+├── wider-face-pascal-voc-annotations
+├── MAFA_anno.zip
+├── README.md
+```
 
-This project is released under the [Apache 2.0 license](LICENSE).
+d. Prepare annotations for train/val WIDER and train/test MAFA.
 
-## Installation
+```shell
+./prepare_anno.sh
+```
+After the last line WIDER_unmasked_anno - directory with xmls annotations and train_unmasked.txt (val_unmasked.txt) - file with image names should be created in WIDER_train (WIDER_val) directory;
+MAFA_anno and train.txt (test.txt) in MAFA_train (MAFA_test).
+
+Comment: for generating WIDER PASCAL VOC annotations was initially used [this](https://github.com/akofman/wider-face-pascal-voc-annotations) project, for MAFA - FMLD_annotations.zip was downloaded from [this](https://github.com/borutb-fri/FMLD) research but with deleting WIDER 
+annotations in .zip (MAFA_anno.zip in current repo).
+
+Following [this](https://github.com/borutb-fri/FMLD) research faces in .xml annotation-files can be one out of three types: *masked_face*, *unmasked_face* and *incorrectly_masked_face*.
+
+## Install vedadet subproject.
+
+You can also follow [this](https://github.com/Media-Smart/vedadet) instruction. It's all the same here.
+
 ### Requirements
 
 - Linux
@@ -33,12 +67,10 @@ This project is released under the [Apache 2.0 license](LICENSE).
 
 We have tested the following versions of OS and softwares:
 
-- OS: Ubuntu 16.04.6 LTS
-- CUDA: 10.2
-- PyTorch 1.6.0
+- OS: Ubuntu 20.04.2 LTS
+- CUDA: 11.5
+- PyTorch 1.10.0
 - Python 3.8.5
-
-### Install vedadet
 
 a. Create a conda virtual environment and activate it.
 
@@ -53,88 +85,53 @@ b. Install PyTorch and torchvision following the [official instructions](https:/
 conda install pytorch torchvision -c pytorch
 ```
 
-c. Clone the vedadet repository.
+c. Install vedadet.
 
 ```shell
-git clone https://github.com/Media-Smart/vedadet.git
-cd vedadet
 vedadet_root=${PWD}
-```
-
-d. Install vedadet.
-
-```shell
 pip install -r requirements/build.txt
 pip install -v -e .
 ```
 
 ## Train
 
-a. Config
-
-Modify some configuration accordingly in the config file like `configs/trainval/retinanet/retinanet.py`
+Train on MAFA+WIDER dataset to predict *masked_face*, *unmasked_face* and *incorrectly_masked_face*. Weights, optimizer
+and meta files will be generated in `workdir`.
 
 b. Multi-GPUs training
 ```shell
-tools/dist_trainval.sh configs/trainval/retinanet/retinanet.py "0,1"
+tools/dist_trainval.sh configs/trainval/tinaface_masked/tinaface_r50_fpn_bn_wider_mafa.py "0,1"
 ```
 
 c. Single GPU training
 ```shell
-CUDA_VISIBLE_DEVICES="0" python tools/trainval.py configs/trainval/retinanet/retinanet.py
+CUDA_VISIBLE_DEVICES="0" python tools/trainval.py configs/trainval/tinaface_masked/tinaface_r50_fpn_bn_wider_mafa.py
 ```
 
-## Test
+## Evaluation
 
-a. Config
-
-Modify some configuration accordingly in the config file like `configs/trainval/retinanet/retinanet.py`
-
-b. Test
+Evaluation is taking place for WIDER_val and MAFA_test separately. Widerface txt files will be generated at `--outdir` 
+after running the following code and then use [eval_tools](http://shuoyang1213.me/WIDERFACE/support/eval_script/eval_tools.zip) 
+to evaluate the WIDERFACE performance:
 ```shell
-CUDA_VISIBLE_DEVICES="0" python tools/test.py configs/trainval/retinanet/retinanet.py weight_path
+CUDA_VISIBLE_DEVICES="0" python configs/trainval/tinaface/test_widerface.py configs/trainval/tinaface_masked/tinaface_r50_fpn_bn_wider_eval.py weight_path.pth --outdir eval_dirs/tmp/wider/
 ```
 
-## Inference
-
-a. Config
-
-Modify some configuration accordingly in the config file like `configs/infer/retinanet/retinanet.py`
-
-b. Inference
-
+For MAFA following code will generate `mafa_test_pr.png` file with pr curves:
 ```shell
-CUDA_VISIBLE_DEVICES="0" python tools/infer.py configs/infer/retinanet/retinanet.py image_path
+CUDA_VISIBLE_DEVICES="0" python configs/trainval/tinaface_masked/test_mafa.py configs/trainval/tinaface_masked/tinaface_r50_fpn_bn_mafa_eval.py weight_path.pth --outdir eval_dirs/tmp/mafa/
 ```
 
-## Deploy
+## Inference 
 
-a. Convert to Onnx
+Draw bbxs on images or video (for video works slow currently, optimization in plans). Firstly change weight file path in your *config.py* file.
 
-Firstly, install volksdep following the [official instructions](https://github.com/Media-Smart/volksdep).
-
-Then, run the following code to convert PyTorch to Onnx. The input shape format is `CxHxW`. If you need the onnx model with constant input shape, please remove `--dynamic_shape` in the end.
-
+For image:
 ```shell
-CUDA_VISIBLE_DEVICES="0" python tools/torch2onnx.py configs/trainval/retinanet/retinanet.py weight_path out_path --dummy_input_shape 3,800,1344 --dynamic_shape
+CUDA_VISIBLE_DEVICES="0" python tools/infer.py configs/infer/tinaface_masked/tinaface_r50_fpn_bn_wider_mafa.py image_path
 ```
 
-Here are some unsupported operations for model conversion.
-- GN
-- Deformable Conv
-
-Please see more details in [this](https://pytorch.org/docs/stable/onnx.html).
-
-b. Inference SDK
-
-Firstly, install flexinfer following the [official instructions](https://github.com/Media-Smart/flexinfer).
-
-Then, see the [example](https://github.com/Media-Smart/flexinfer/tree/master/examples/object_detection) for details.
-
-## Contact
-
-This repository is currently maintained by Yanjia Zhu ([@mike112223](http://github.com/mike112223)), Hongxiang Cai ([@hxcai](http://github.com/hxcai)), Yichao Xiong ([@mileistone](https://github.com/mileistone)).
-
-## Credits
-We got a lot of code from [mmcv](https://github.com/open-mmlab/mmcv) and [mmdetection](https://github.com/open-mmlab/mmdetection), thanks to [open-mmlab](https://github.com/open-mmlab).
-
+For video (output.avi - your video), output_with_bbxs.avi will be created:
+```shell
+CUDA_VISIBLE_DEVICES="0" python MFD/webcam_video_capture/add_bbxs.py configs/infer/tinaface_masked/tinaface_r50_fpn_bn_wider_mafa_video.py MFD/webcam_video_capture/videos/output.avi
+```
