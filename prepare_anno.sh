@@ -8,7 +8,7 @@ ls -l data/WIDERFace/WIDER_val/Annotations | grep "^-" | awk '{print $9}' | cut 
 python configs/trainval/tinaface/filter_widerface_val.py --gt_path eval_tools/ground_truth --ann_path data/WIDERFace/WIDER_val/Annotations/ > /dev/null
 
 # prepare annotations in PASCAL VOC format for MAFA
-unzip MAFA_anno.zip
+unzip MAFA_anno.zip > /dev/null
 mv MAFA_anno/train data/MAFA/MAFA_train/Annotations > /dev/null
 mv MAFA_anno/test data/MAFA/MAFA_test/Annotations > /dev/null
 rm -r MAFA_anno > /dev/null
