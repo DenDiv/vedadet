@@ -20,13 +20,14 @@ def parse_args():
 
 def dump_pr_curves(eval_res, dump_dir):
     fig, axs = plt.subplots(1, 3, figsize=(15, 6), constrained_layout=True, sharey=True)
-    axs[0].plot(eval_res['eval_res'][0]['recall'], eval_res['eval_res'][0]['precision'])
-    axs[1].plot(eval_res['eval_res'][1]['recall'], eval_res['eval_res'][1]['precision'])
-    axs[2].plot(eval_res['eval_res'][2]['recall'], eval_res['eval_res'][2]['precision'])
+    axs[0].plot(eval_res['eval_res'][0]['recall'], eval_res['eval_res'][0]['precision'], label=f"{eval_res['eval_res'][0]['ap']:.3f}")
+    axs[1].plot(eval_res['eval_res'][1]['recall'], eval_res['eval_res'][1]['precision'], label=f"{eval_res['eval_res'][1]['ap']:.3f}")
+    axs[2].plot(eval_res['eval_res'][2]['recall'], eval_res['eval_res'][2]['precision'], label=f"{eval_res['eval_res'][2]['ap']:.3f}")
     for i in range(3):
         axs[i].set_xlabel("Recall")
         axs[i].set_ylabel("Precision")
         axs[i].set_title(CLASSES[i])
+        axs[i].legend(loc="upper right")
     fig.suptitle(f'PR curves for MAFA test dataset, mAP: {eval_res["mAP"]:.3f}', fontsize=16)
     plt.savefig(os.path.join(dump_dir, "mafa_test_pr.png"))
 
